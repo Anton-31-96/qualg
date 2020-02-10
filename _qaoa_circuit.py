@@ -42,10 +42,10 @@ class QAOACircuit(object):
         """
         get U(B,bs[p-1])U(C,gs[p-2])...U(C,gs[0])U(B,bs[0])|+>
         Args:
-            bs (1darray): angle parameters for U(B) matrices, 0 < bs[i] < pi.
-            gs (1darray): angle parameters for U(B) matrices, 0 < gs[i] < 2*pi.
+            bs (1d array): angle parameters for U(B) matrices, 0 < bs[i] < pi.
+            gs (1d array): angle parameters for U(B) matrices, 0 < gs[i] < 2*pi.
         Returns:
-            1darray, final state.
+            1d array, final state.
         """
         qureg = self.qureg
         eng = qureg.engine
@@ -79,17 +79,17 @@ def build_qaoa_circuit(clause_list, num_bit, depth, z0=None):
         num_bit (int): the number of bits.
         depth (int): the depth of circuit.
     Returns:
-        QAOAQCircuit, the circuit run parameters.
+        QAOACircuit, the circuit run parameters.
     """
     if z0 is None:
         z0 = np.ones(num_bit, dtype='int32')
     qureg = _initialize_register(num_bit, 'simulator')
-    
+
     # build evolution operators
     expb = b_op()
     expc = c_op(clause_list)
 
-    return QAOAQCircuit(depth, expc, expb, qureg, z0)
+    return QAOACircuit(depth, expc, expb, qureg, z0)
 
 
 def c_op(clause_list):
@@ -137,4 +137,4 @@ def _initialize_register(num_bit, mode='simulator'):
 
     # initialize register
     qureg = eng.allocate_qureg(num_bit)
-    return 
+    return qureg
