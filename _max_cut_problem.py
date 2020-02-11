@@ -40,16 +40,6 @@ def get_bit(z, i):
     return (z >> i) & 0x1
 
 
-# def max_cut_loss(z, clause_list):
-#     '''
-#     loss for a max cut problem.
-#     '''
-#     loss = 0
-#     for w, (start, end) in clause_list:
-#         loss -= w*(1-2*(get_bit(z, start)^get_bit(z, end)))
-#     return loss
-
-
 def max_cut_obj(z, clause_list):
     """
     Returns loss for a max cut problem 
@@ -93,6 +83,27 @@ def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, spelli
     ans = qaoa_result_digest(best_x, cc, loss_table)
     # show_graph(graph, ans[2])
     return ans
+
+
+def show_loss_table(graph):
+    """
+    Arguments:
+        graph (nx.graph):
+    Returns: loss_table (ndarray)
+    """
+    num_bit = len(graph.nodes) #graph.shape[0]
+    N = 2**num_bit
+
+    clause_list = graph_to_clause(graph)
+    # loss_func = lambda z: max_cut_obj(z, clause_list)
+
+    def loss_func(z):
+        return max_cut_obj(z, clause_list)
+    valid_mask = None
+
+    loss_table = np.array([loss_func(z) for z in range(N)])
+
+    return loss_table
 
 
 def get_qaoa_loss(circuit, loss_table, var_mask=None, x0=None, spelling=False):
