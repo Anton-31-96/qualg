@@ -68,20 +68,26 @@ def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, spelli
     N = 2**num_bit
 
     clause_list = graph_to_clause(graph)
-    loss_func = lambda z: max_cut_obj(z, clause_list)
+    # loss_func = lambda z: max_cut_obj(z, clause_list)
+
+    def loss_func(z):
+        return max_cut_obj(z, clause_list)
     valid_mask = None
 
     loss_table = np.array([loss_func(z) for z in range(N)])
-
     cc = build_qaoa_circuit(clause_list, num_bit, depth)
 
     # obtain and analyse results
-    if x0 is None: x0 = np.zeros(cc.num_param)
     qaoa_loss, log = get_qaoa_loss(cc, loss_table, spelling=spelling) # the expectation value of loss function
 
+    if x0 is None:
+        x0 = np.zeros(cc.num_param)
+
     if optimizer == 'COBYLA':
-        best_x = minimize(qaoa_loss, x0=x0,
-                method='COBYLA', options={'maxiter':max_iter}).x
+        best_x = minimize(qaoa_loss,
+                          x0=x0,
+                          method='COBYLA',
+                          options={'maxiter': max_iter}).x
     else:
         raise
     ans = qaoa_result_digest(best_x, cc, loss_table)
