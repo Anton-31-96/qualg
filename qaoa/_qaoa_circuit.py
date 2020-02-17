@@ -1,10 +1,10 @@
 # created by Anton Bozhedarov
 
+import matplotlib.pyplot as plt
 
 import projectq
 from scipy.optimize import minimize, brute
 
-import matplotlib.pyplot as plt
 
 # Import projectq main engine and gates
 from projectq import MainEngine
@@ -121,9 +121,9 @@ def b_op():
 
 
 def _initialize_register(num_bit, mode='simulator'):
-    '''
+    """
     use an engine instead of current one.
-    '''
+    """
     import projectq.setups.default
 
     # create a main compiler engine with a specific backend:

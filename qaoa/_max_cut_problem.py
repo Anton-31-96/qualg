@@ -3,7 +3,8 @@
 import numpy as np
 import networkx as nx
 from scipy.optimize import minimize, brute
-from _qaoa_circuit import QAOACircuit, build_qaoa_circuit
+
+from ._qaoa_circuit import QAOACircuit, build_qaoa_circuit
 
 
 def graph_to_clause(graph: nx.graph) -> list:
@@ -85,6 +86,42 @@ def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, spelli
     return ans
 
 
+def get_amplitudes(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, spelling=False):
+    """
+    solve a problem defined by a graph
+    """
+    num_bit = len(graph.nodes) #graph.shape[0]
+    N = 2**num_bit
+
+    clause_list = graph_to_clause(graph)
+    # loss_func = lambda z: max_cut_obj(z, clause_list)
+
+    def loss_func(z):
+        return max_cut_obj(z, clause_list)
+    valid_mask = None
+
+    loss_table = np.array([loss_func(z) for z in range(N)])
+    cc = build_qaoa_circuit(clause_list, num_bit, depth)
+
+    # obtain and analyse results
+    qaoa_loss, log = get_qaoa_loss(cc, loss_table, spelling=spelling) # the expectation value of loss function
+
+    if x0 is None:
+        x0 = np.zeros(cc.num_param)
+
+    if optimizer == 'COBYLA':
+        best_x = minimize(qaoa_loss,
+                          x0=x0,
+                          method='COBYLA',
+                          options={'maxiter': max_iter}).x
+    else:
+        raise
+    bs, gs = best_x[:depth], best_x[depth:]
+    pl = np.abs(cc.evolve(bs, gs)) ** 2
+    ans = qaoa_result_digest(best_x, cc, loss_table)
+    return pl, ans
+
+
 def show_loss_table(graph):
     """
     Arguments:
@@ -157,9 +194,11 @@ def qaoa_result_digest(x, circuit, loss_table):
 
     # get the exact solution
     exact_x = np.argmin(loss_table)
+    exact_xs = np.argwhere(loss_table == np.amin(loss_table)).flatten()
     exact_loss = loss_table[exact_x]
 
     print(
         'Obtain: p(%d) = %.4f with loss = %.4f, mean loss = %.4f.' % (max_ind, pl[max_ind], most_prob_loss, mean_loss))
     print('Exact x = %d, loss = %.4f.' % (exact_x, exact_loss))
+    print(f'All exact solutions are {exact_xs}')
     return max_ind, most_prob_loss, exact_x, exact_loss, pl[max_ind]
