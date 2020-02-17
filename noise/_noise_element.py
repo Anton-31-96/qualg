@@ -1,5 +1,6 @@
-from _noiseoperator import NoiseKraus, NoiseKrausError
 from projectq.ops import BasicGate
+
+from ._noiseoperator import NoiseKraus, NoiseKrausError
 
 
 class NoiseChannelError(Exception):
@@ -12,8 +13,8 @@ class NoiseChannel(object):
         """
         Arguments:
             kraus_ops (NoiseKraus obj): Noise channel in Kraus representation
-            qubits (set of int): indexes of qubits that are affected by noise channel
-            gates (set of gates): gates that are affected by noise channel
+            qubits (set of int): indexes of qubits that are affected by noise_zoo channel
+            gates (set of gates): gates that are affected by noise_zoo channel
         """
         # TODO: consider case of all qubits and all gates. And change methods add_gates and add_qubits
         self.kraus_ops = kraus_ops

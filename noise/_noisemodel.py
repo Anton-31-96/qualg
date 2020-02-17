@@ -1,7 +1,7 @@
 from projectq.ops import Measure, Allocate
 from copy import deepcopy
-from _noise_element import NoiseChannel
-from _noiseoperator import NoiseKraus
+from ._noise_element import NoiseChannel
+from ._noiseoperator import NoiseKraus
 
 
 class NoiseModelError(Exception):
@@ -14,9 +14,9 @@ class NoiseModel(object):
         """
         Arguments:
             error (NoiseKraus obj): quantum error
-            noise_gates (list|set): gates that is affected by noise
-            noise_qubits (list|set): qubits indexes that are affected by noise model
-            name (str): name of the noise model
+            noise_gates (list|set): gates that is affected by noise_zoo
+            noise_qubits (list|set): qubits indexes that are affected by noise_zoo model
+            name (str): name of the noise_zoo model
         """
         self._noise_qubits = set()
         self._noise_gates = set()
@@ -32,7 +32,7 @@ class NoiseModel(object):
                   name=None,
                   position='after'):
         """
-        Add quantum error to the noise model
+        Add quantum error to the noise_zoo model
         """
 
         if isinstance(error, NoiseChannel):

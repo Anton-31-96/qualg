@@ -1,21 +1,23 @@
 """
-Contains noise engine
+Contains noise_zoo engine
 """
+
+from copy import deepcopy
+import random
 
 import numpy as np
 from projectq.cengines import BasicEngine
 from projectq.ops import Command, ClassicalInstructionGate, X, Y, Z
-from copy import deepcopy
-from _noiseoperator import NoiseKraus
-from _noise_element import NoiseChannel
-from standard_noise import Id
-import random
+
+from ._noiseoperator import NoiseKraus
+from ._noise_element import NoiseChannel
+from .noise_zoo import Id
 
 
 class NoiseEngine(BasicEngine):
     """
     Noise engine attaches quantum error channels
-    with respect to the noise model
+    with respect to the noise_zoo model
     """
 
     def __init__(self, p, noise_model=None):
@@ -109,7 +111,7 @@ class NoiseEngine(BasicEngine):
 
     def receive(self, command_list):
         """
-        Add noise to the command and send it to the next engine
+        Add noise_zoo to the command and send it to the next engine
         """
         new_command_list = []
         for cmd in command_list:
