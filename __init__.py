@@ -1,2 +1,2 @@
-import noise
-import qaoa
+from qualg import noise
+from qualg import qaoa
