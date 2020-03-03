@@ -16,3 +16,4 @@ from ._max_sat_problem import(generate_3sat,
                               max_sat_obj,
                               build_qaoa_circuit_sat,
                               solve_sat)
+
