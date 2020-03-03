@@ -12,3 +12,7 @@ from ._qaoa_circuit import (QAOACircuit,
                             b_op,
                             c_op
                             )
+from ._max_sat_problem import(generate_3sat,
+                              max_sat_obj,
+                              build_qaoa_circuit_sat,
+                              solve_sat)
