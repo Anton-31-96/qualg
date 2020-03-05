@@ -161,7 +161,7 @@ def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, sp
 
     """
 
-    num_bit = clause_list.max()
+    num_bit = np.abs(clause_list).max()
     N = 2 ** num_bit
 
     def loss_func(z):
