@@ -27,9 +27,9 @@ def generate_3sat(variable_number, clause_number):
     counter = 0
 
     while counter < clause_number:
-        new_item = np.random.choice(range(1, variable_number+1), size=3, replace=False)
+        new_item = np.random.choice(range(1, variable_number + 1), size=3, replace=False)
         new_item = np.sort(new_item)
-        negation = np.random.choice([-1,1], size=3)
+        negation = np.random.choice([-1, 1], size=3)
         new_item *= negation
 
         if new_item.tolist() not in list_of_clauses:
@@ -46,16 +46,29 @@ def get_bit(z, i):
     return (z >> i) & 0x1
 
 
+def negation(z, var_sign):
+    """
+    Returns negation of the bit z if var_sign == -1
+    """
+
+    if var_sign == 1:
+        return z
+    else:
+        return not z
+
+
 def max_sat_obj(z, clause_list):
     """
     Returns loss for a max SAT problem. Here we count the number of violated clauses
     """
     loss = 0
-    for var_i, var_j, var_k in clause_list:
-        sign_i, sing_j, sing_k = np.sign(var_i), np.sign(var_j), np.sign(var_k)
-        loss += (1 - sign_i * get_bit(z, var_i)) \
-                * (1 - sing_j * get_bit(z, var_j)) \
-                * (1 - sing_k * get_bit(z, var_k))
+    for inst in clause_list:
+        sign_i, sign_j, sign_k = np.sign(inst)
+        var_i, var_j, var_k = np.abs(inst) - 1
+        loss += negation(get_bit(z, var_i), sign_i) \
+                & negation(get_bit(z, var_j), sign_j) \
+                & negation(get_bit(z, var_k), sign_k)
+
     return loss
 
 
@@ -84,7 +97,6 @@ def build_qaoa_circuit_sat(clause_list, num_bit, depth, z0=None):
 
 
 def single_hamiltonian(clause: list):
-
     # separate variables number and its negation signs
     var0, var1, var2 = np.abs(clause) - 1
 
@@ -100,17 +112,17 @@ def single_hamiltonian(clause: list):
     ham1 = QubitOperator(f'Z{var0}', sign0)
     ham2 = QubitOperator(f'Z{var1}', sign1)
     ham3 = QubitOperator(f'Z{var2}', sign2)
-    ham4 = QubitOperator(f'Z{var0} Z{var1}', sign0*sign1)
-    ham5 = QubitOperator(f'Z{var0} Z{var2}', sign0*sign2)
-    ham6 = QubitOperator(f'Z{var1} Z{var2}', sign1*sign2)
-    ham7 = QubitOperator(f'Z{var0} Z{var1} Z{var2}', sign0*sign1*sign2)
+    ham4 = QubitOperator(f'Z{var0} Z{var1}', sign0 * sign1)
+    ham5 = QubitOperator(f'Z{var0} Z{var2}', sign0 * sign2)
+    ham6 = QubitOperator(f'Z{var1} Z{var2}', sign1 * sign2)
+    ham7 = QubitOperator(f'Z{var0} Z{var1} Z{var2}', sign0 * sign1 * sign2)
 
     hams = [ham0, ham1, ham2, ham3, ham4, ham5, ham6, ham7]
 
     ham = QubitOperator()
 
     for h in hams:
-        ham += 1/8 * h
+        ham += 1 / 8 * h
 
     return ham
 
@@ -127,8 +139,9 @@ def c_op(clause_list: np.ndarray):
     """
 
     def expb(t, qureg):
-        hamiltonian = reduce(lambda x,y:x+y, [single_hamiltonian(clause) for clause in clause_list])
+        hamiltonian = reduce(lambda x, y: x + y, [single_hamiltonian(clause) for clause in clause_list])
         ops.TimeEvolution(t, hamiltonian=hamiltonian) | qureg
+
     return expb
 
 
@@ -153,6 +166,7 @@ def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, sp
 
     def loss_func(z):
         return max_sat_obj(z, clause_list)
+
     valid_mask = None
 
     loss_table = np.array([loss_func(z) for z in range(N)])
@@ -174,3 +188,23 @@ def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, sp
     ans = qaoa_result_digest(best_x, cc, loss_table)
     # show_graph(graph, ans[2])
     return ans
+
+
+def show_loss_table_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, spelling=False):
+    """
+    Shows loss table for sat problem.
+    Temporary function for testing the algorithm
+    """
+
+    num_bit = clause_list.max()
+    N = 2 ** num_bit
+
+    def loss_func(z):
+        return max_sat_obj(z, clause_list)
+
+    loss_table = np.array([loss_func(z) for z in range(N)])
+    # cc = build_qaoa_circuit_sat(clause_list, num_bit, depth)
+
+    loss_table = np.array([loss_func(z) for z in range(N)])
+
+    return loss_table
