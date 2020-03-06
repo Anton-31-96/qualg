@@ -145,7 +145,7 @@ def c_op(clause_list: np.ndarray):
     return expb
 
 
-def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, spelling=False):
+def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, show_answer=False, spelling=False):
     """
     Solves problem defined by SAT formula.
 
@@ -156,6 +156,7 @@ def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, sp
         optimizer:
         max_iter:
         spelling:
+        show_answer:
 
     Returns:
 
@@ -185,7 +186,7 @@ def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, sp
                           options={'maxiter': max_iter}).x
     else:
         raise
-    ans = qaoa_result_digest(best_x, cc, loss_table)
+    ans = qaoa_result_digest(best_x, cc, loss_table, show_answer=show_answer)
     # show_graph(graph, ans[2])
     return ans
 

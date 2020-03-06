@@ -51,7 +51,7 @@ def max_cut_obj(z, clause_list):
     return loss
 
 
-def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, spelling=False):
+def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, show_answer=False, spelling=False):
     """
     solve a problem defined by a graph
     """
@@ -81,7 +81,7 @@ def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, spelli
                           options={'maxiter': max_iter}).x
     else:
         raise
-    ans = qaoa_result_digest(best_x, cc, loss_table)
+    ans = qaoa_result_digest(best_x, cc, loss_table, show_answer)
     # show_graph(graph, ans[2])
     return ans
 
@@ -177,7 +177,7 @@ def get_qaoa_loss(circuit, loss_table, var_mask=None, x0=None, spelling=False):
     return loss, log
 
 
-def qaoa_result_digest(x, circuit, loss_table):
+def qaoa_result_digest(x, circuit, loss_table, show_answer=False):
     """
     returns a quality from [0-1] of the result of the QAOA algorithm as compared to the optimal solution
     """
@@ -197,8 +197,10 @@ def qaoa_result_digest(x, circuit, loss_table):
     exact_xs = np.argwhere(loss_table == np.amin(loss_table)).flatten()
     exact_loss = loss_table[exact_x]
 
-    print(
-        'Obtain: p(%d) = %.4f with loss = %.4f, mean loss = %.4f.' % (max_ind, pl[max_ind], most_prob_loss, mean_loss))
-    print('Exact x = %d, loss = %.4f.' % (exact_x, exact_loss))
-    print(f'All exact solutions are {exact_xs}')
+    if show_answer:
+        print(
+            'Obtain: p(%d) = %.4f with loss = %.4f, mean loss = %.4f.' % (max_ind, pl[max_ind], most_prob_loss, mean_loss))
+        print('Exact x = %d, loss = %.4f.' % (exact_x, exact_loss))
+        print(f'All exact solutions are {exact_xs}')
+
     return max_ind, most_prob_loss, exact_x, exact_loss, pl[max_ind]
