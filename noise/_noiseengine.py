@@ -65,15 +65,19 @@ class NoiseEngine(BasicEngine):
         probs.append(1 - 0.75 * p)
         kraus_ops = [X, Y, Z, Id]
 
-        instance = np.random.choice(kraus_ops, p=probs)
 
         # acted_qubits = [q for qreg in cmd.qubits for q in qreg]
-        acted_qubits = [q for q in cmd.qubits]
+        # acted_qubits = [q for q in cmd.qubits]
+
+        acted_qubits = [q for qureg in cmd.all_qubits[1:] for q in qureg]
         control_qubits = cmd.control_qubits
         qubits = acted_qubits # + control_qubits
 
+        instance = np.random.choice(kraus_ops, p=probs, size=len(qubits))
+        # instance = np.random.choice(kraus_ops, p=probs)
+
         new_cmd = self._generate_command(instance, qubits, self.next_engine)
-        return [cmd, new_cmd]
+        return [cmd] + new_cmd
 
     # TODO: figure out this function better implementation
     # @staticmethod
@@ -87,10 +91,13 @@ class NoiseEngine(BasicEngine):
     #     return cmd_list
 
     @staticmethod
-    def _generate_command(kraus_ops, qubits, engine):
+    def _generate_command(kraus_ops, qubits, engine) -> list:
         if not isinstance(qubits, list):
             qubits = list(qubits)
-        return Command(engine, kraus_ops, qubits)
+        cmd = []
+        for op, qubit in zip(kraus_ops, qubits):
+            cmd.append(Command(engine, op, [[qubit]]))
+        return cmd
 
     @staticmethod
     def _generate_instance(error):

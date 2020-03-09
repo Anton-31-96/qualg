@@ -18,7 +18,7 @@ from projectq.backends import CircuitDrawer, Simulator #, IBMBackend
 from projectq import ops, backends
 from projectq.types import Qureg
 
-from ..noise import NoiseEngine
+from qualg.noise import NoiseEngine
 
 
 class QAOACircuit(object):
