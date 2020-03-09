@@ -72,7 +72,7 @@ def max_sat_obj(z, clause_list):
     return loss
 
 
-def build_qaoa_circuit_sat(clause_list, num_bit, depth, z0=None):
+def build_qaoa_circuit_sat(clause_list, num_bit, depth, mode, noise_model):
     """
     This is the copy of similar function from the _qaoa_circuit.py
     TODO: write down a new function that will track the type of problem (i.e. max-sat or max-cut).
@@ -81,13 +81,15 @@ def build_qaoa_circuit_sat(clause_list, num_bit, depth, z0=None):
         clause_list (func): to construct the loss function used in C.
         num_bit (int): the number of bits.
         depth (int): the depth of circuit.
+        mode: TODO: description
+        noise_model: TODO: description
     Returns:
         QAOACircuit, the circuit run parameters.
     """
 
     if z0 is None:
         z0 = np.ones(num_bit, dtype='int32')
-    qureg = _initialize_register(num_bit, 'simulator')
+    qureg = _initialize_register(num_bit, mode=mode, noise_model=noise_model)
 
     # build evolution operators
     expb = b_op()
@@ -145,7 +147,7 @@ def c_op(clause_list: np.ndarray):
     return expb
 
 
-def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, show_answer=False, spelling=False):
+def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, mode='simulator', noise_model=None, show_answer=False, spelling=False):
     """
     Solves problem defined by SAT formula.
 
@@ -157,6 +159,8 @@ def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, sh
         max_iter:
         spelling:
         show_answer:
+        mode:
+        noise_model:
 
     Returns:
 
@@ -171,7 +175,7 @@ def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, sh
     valid_mask = None
 
     loss_table = np.array([loss_func(z) for z in range(N)])
-    cc = build_qaoa_circuit_sat(clause_list, num_bit, depth)
+    cc = build_qaoa_circuit_sat(clause_list, num_bit, depth=depth, mode=mode, noise_model=noise_model)
 
     # obtain and analyse results
     qaoa_loss, log = get_qaoa_loss(cc, loss_table, spelling=spelling)  # the expectation value of loss function
@@ -187,7 +191,6 @@ def solve_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_iter=1000, sh
     else:
         raise
     ans = qaoa_result_digest(best_x, cc, loss_table, show_answer=show_answer)
-    # show_graph(graph, ans[2])
     return ans
 
 
@@ -204,7 +207,6 @@ def show_loss_table_sat(clause_list, depth, x0=None, optimizer='COBYLA', max_ite
         return max_sat_obj(z, clause_list)
 
     loss_table = np.array([loss_func(z) for z in range(N)])
-    # cc = build_qaoa_circuit_sat(clause_list, num_bit, depth)
 
     loss_table = np.array([loss_func(z) for z in range(N)])
 

@@ -51,7 +51,7 @@ def max_cut_obj(z, clause_list):
     return loss
 
 
-def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, show_answer=False, spelling=False):
+def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, mode='simulator', noise_model=None, show_answer=False, spelling=False):
     """
     solve a problem defined by a graph
     """
@@ -66,7 +66,7 @@ def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, show_a
     valid_mask = None
 
     loss_table = np.array([loss_func(z) for z in range(N)])
-    cc = build_qaoa_circuit(clause_list, num_bit, depth)
+    cc = build_qaoa_circuit(clause_list, num_bit, depth=depth, mode=mode, noise_model=noise_model)
 
     # obtain and analyse results
     qaoa_loss, log = get_qaoa_loss(cc, loss_table, spelling=spelling) # the expectation value of loss function
@@ -86,7 +86,7 @@ def solve_graph(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, show_a
     return ans
 
 
-def get_amplitudes(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, spelling=False):
+def get_amplitudes(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, mode='simulator', noise_model=None, show_answer=False, spelling=False):
     """
     solve a problem defined by a graph
     """
@@ -101,7 +101,7 @@ def get_amplitudes(graph, depth, x0=None, optimizer='COBYLA', max_iter=1000, spe
     valid_mask = None
 
     loss_table = np.array([loss_func(z) for z in range(N)])
-    cc = build_qaoa_circuit(clause_list, num_bit, depth)
+    cc = build_qaoa_circuit(clause_list, num_bit, depth=depth, mode=mode, noise_model=noise_model)
 
     # obtain and analyse results
     qaoa_loss, log = get_qaoa_loss(cc, loss_table, spelling=spelling) # the expectation value of loss function

@@ -18,6 +18,8 @@ from projectq.backends import CircuitDrawer, Simulator #, IBMBackend
 from projectq import ops, backends
 from projectq.types import Qureg
 
+from ..noise import NoiseEngine
+
 
 class QAOACircuit(object):
     def __init__(self, depth, expc, expb, qureg, z0):
@@ -72,18 +74,20 @@ class QAOACircuit(object):
         ops.Measure | qureg
 
 
-def build_qaoa_circuit(clause_list, num_bit, depth, z0=None):
+def build_qaoa_circuit(clause_list, num_bit, depth, z0=None, mode='simulator', noise_model=None):
     """
     Arguments:
         clause_list (func): to construct the loss function used in C.
         num_bit (int): the number of bits.
         depth (int): the depth of circuit.
+        mode (str): keyword for mode description ('simulator' | 'graphical' | 'noise')
+        noise_model : model for simulation of noise
     Returns:
         QAOACircuit, the circuit run parameters.
     """
     if z0 is None:
         z0 = np.ones(num_bit, dtype='int32')
-    qureg = _initialize_register(num_bit, 'simulator')
+    qureg = _initialize_register(num_bit, mode=mode, noise_model=noise_model)
 
     # build evolution operators
     expb = b_op()
@@ -120,20 +124,31 @@ def b_op():
     return expb
 
 
-def _initialize_register(num_bit, mode='simulator'):
+def _initialize_register(num_bit, mode='simulator', noise_model=None):
     """
     use an engine instead of current one.
     """
     import projectq.setups.default
+
+    engine_list = []
 
     # create a main compiler engine with a specific backend:
     if mode == 'graphical':
         backend = CircuitDrawer()
     elif mode == 'simulator':
         backend = Simulator()
+    elif mode == 'noise':
+        backend = Simulator()
+
+        # Create noise engine according to the noise_model
+        if noise_model is None:
+            raise
+        engine_list.append(NoiseEngine(p=0.01, noise_model=noise_model))  # TODO: delete specific p later. Consider only noise_model
+
     else:
         raise
-    eng = MainEngine(backend)
+
+    eng = MainEngine(backend=backend, engine_list=engine_list)
 
     # initialize register
     qureg = eng.allocate_qureg(num_bit)
