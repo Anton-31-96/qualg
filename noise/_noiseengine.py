@@ -25,7 +25,7 @@ class NoiseEngine(BasicEngine):
         Initialize NoiseEngine object
         """
 
-        self.p = p # Delete this later
+        self.p = p  # TODO: Delete this later
 
         noise_model = deepcopy(noise_model)
         BasicEngine.__init__(self)
