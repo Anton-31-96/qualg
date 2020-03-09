@@ -72,7 +72,7 @@ def max_sat_obj(z, clause_list):
     return loss
 
 
-def build_qaoa_circuit_sat(clause_list, num_bit, depth, mode, noise_model):
+def build_qaoa_circuit_sat(clause_list, num_bit, depth, z0=None, mode='simulator', noise_model=None):
     """
     This is the copy of similar function from the _qaoa_circuit.py
     TODO: write down a new function that will track the type of problem (i.e. max-sat or max-cut).
