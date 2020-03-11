@@ -29,6 +29,7 @@ class QAOACircuit(object):
         self.qureg = qureg
         self.z0 = z0
         self._refresh()
+        self._engines_list = self._get_engines_list
 
     @property
     def num_param(self):
@@ -40,7 +41,7 @@ class QAOACircuit(object):
         """ number of vertices """
         return len(self.qureg)
 
-    def evolve(self, bs, gs):
+    def _evolve_noiseless(self, bs, gs):
         """
         get U(B,bs[p-1])U(C,gs[p-2])...U(C,gs[0])U(B,bs[0])|+>
         Args:
@@ -64,6 +65,27 @@ class QAOACircuit(object):
         self._refresh()
         return qvec
 
+    def evolve(self, bs, gs, nshots=30):
+        """
+        get U(B,bs[p-1])U(C,gs[p-2])...U(C,gs[0])U(B,bs[0])|+>
+        Args:
+            bs (1d array): angle parameters for U(B) matrices, 0 < bs[i] < pi.
+            gs (1d array): angle parameters for U(B) matrices, 0 < gs[i] < 2*pi.
+            nshots (int): number of circuit runs in case of noisy evaluation
+        Returns:
+            1d array, final state.
+        """
+        # check if noise simulation
+        if NoiseEngine not in self._engines_list:
+            nshots = 1  # there is no need to run circuit many times
+
+        qvec_avg = np.zeros(2 ** self.num_bit)
+
+        for i in range(nshots):
+            current = self._evolve_noiseless(bs, gs)
+            qvec_avg += np.abs(current)
+        return qvec_avg / nshots
+
     def _refresh(self):
         qureg = self.qureg
         ops.Measure | qureg
@@ -72,6 +94,17 @@ class QAOACircuit(object):
                 ops.X | q
         qureg.engine.flush()
         ops.Measure | qureg
+
+    @property
+    def _get_engines_list(self):
+        engine = self.qureg.engine
+        engines_list = [engine.main_engine]
+        eng = engine
+        while not eng.is_last_engine:
+            eng = eng.next_engine
+            engines_list.append(type(eng))
+
+        return engines_list
 
 
 def build_qaoa_circuit(clause_list, num_bit, depth, z0=None, mode='simulator', noise_model=None):
