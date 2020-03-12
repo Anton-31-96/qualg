@@ -129,6 +129,30 @@ def single_hamiltonian(clause: list):
     return ham
 
 
+# This solution does not work faster unfortunately
+
+# def single_hamiltonian(clause: list):
+#     # separate variables number and its negation signs
+#     var0, var1, var2 = np.abs(clause) - 1
+#
+#     # explanation for -1:
+#     # qubit numeration starts with 0, but clause literals
+#     # starts with 1 in order to not loose negation of 0 literal
+#     # so here 1 is subtracted to not keep 0-s qubit unused
+#
+#     sign0, sign1, sign2 = [int(i) for i in np.sign(clause)]
+#
+#     # create expanded Hamiltonian from the form 0.125*(1+z_i)(1+z_j)(1+z_k)
+#     ham_I = QubitOperator(' ')
+#     ham0 = ham_I + QubitOperator(f'Z{var0}', sign0)
+#     ham1 = ham_I + QubitOperator(f'Z{var1}', sign1)
+#     ham2 = ham_I + QubitOperator(f'Z{var2}', sign2)
+#
+#     ham = ham0 * ham1 * ham2 / 8
+#
+#     return ham
+
+
 def c_op(clause_list: np.ndarray):
     """
     Creates operator with problem Hamiltonian.
