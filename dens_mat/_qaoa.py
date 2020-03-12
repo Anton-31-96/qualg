@@ -13,13 +13,13 @@ class QAOA_error(Exception):
 
 class QAOA_circuit(object):
 
-    def __init__(self, clause_list, num_qubits, depth, gate_U, gate_B):
-        self.num_qubits = num_qubits
+    def __init__(self, clause_list, depth, gate_U, gate_B):
+        self.num_qubits = np.abs(clause_list).max()
         self.clause_list = clause_list
         self.depth = depth
         self.gate_U = gate_U
         self.gate_B = gate_B
-        self.hamiltonian = hamiltonian(clause_list, num_qubits)
+        self.hamiltonian = hamiltonian(clause_list)
 
     def evolve(self, gs, bs):
         dim = 2 ** self.num_qubits
@@ -85,12 +85,13 @@ class QAOA_circuit(object):
         return exact_xs, exact_loss
 
 
-def build_qaoa(clause_list, depth, num_qubits):
+def build_qaoa(clause_list, depth):
 
+    num_qubits = np.abs(clause_list).max()
     bexp = b_op(num_qubits)
-    cexp = c_op(clause_list, num_qubits)
+    cexp = c_op(clause_list)
 
-    return QAOA_circuit(clause_list, num_qubits, depth, cexp, bexp)
+    return QAOA_circuit(clause_list, depth, cexp, bexp)
 
 
 class Evolution(object):
@@ -122,7 +123,7 @@ class DepolChannel(object):
         acts on state in form of density matrix
         """
         dim = len(state)
-        return np.eye(dim)/dim * self.p + (1 - p) * state
+        return np.eye(dim)/dim * self.p + (1 - self.p) * state
 
 
 def b_op(num_qubits):
@@ -131,6 +132,7 @@ def b_op(num_qubits):
     gate = np.zeros((dim, dim))
     for i in range(1, num_qubits+1):
         gate = gate + get_x_j(i, num_qubits)
+
     def expm(beta):
         return Evolution(la.expm(-1j * beta * gate))
 
@@ -139,7 +141,7 @@ def b_op(num_qubits):
 
 def get_x_j(j, num_qubits):
     Id = np.eye(2)
-    X = np.array([[0,1],[1,0]])
+    X = np.array([[0, 1], [1, 0]])
 
     x_j = 1
     for i in range(1, j):
@@ -153,7 +155,7 @@ def get_x_j(j, num_qubits):
 
 def get_z_j(j, num_qubits):
     Id = np.eye(2)
-    Z = np.array([[1,0],[0,-1]])
+    Z = np.array([[1, 0], [0, -1]])
 
     z_j = 1
     for i in range(1, j):
@@ -165,8 +167,9 @@ def get_z_j(j, num_qubits):
     return z_j
 
 
-def hamiltonian(clause_list, num_qubits):
+def hamiltonian(clause_list):
 
+    num_qubits = np.abs(clause_list).max()
     dim = 2 ** num_qubits
     proj = np.zeros((dim, dim))
 
@@ -177,9 +180,9 @@ def hamiltonian(clause_list, num_qubits):
     return proj
 
 
-def c_op(clause_list, num_qubits):
+def c_op(clause_list):
 
-    ham = hamiltonian(clause_list, num_qubits)
+    ham = hamiltonian(clause_list)
 
     def expm(gamma):
         return Evolution(la.expm(-1j * gamma * ham))
