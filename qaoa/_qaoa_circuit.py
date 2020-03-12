@@ -88,12 +88,12 @@ class QAOACircuit(object):
 
     def _refresh(self):
         qureg = self.qureg
-        ops.Measure | qureg
+        All(Measure) | qureg
         for z, q in zip(self.z0, qureg):
             if int(q) != z:
                 ops.X | q
         qureg.engine.flush()
-        ops.Measure | qureg
+        All(Measure) | qureg
 
     @property
     def _get_engines_list(self):
