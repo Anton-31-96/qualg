@@ -13,13 +13,13 @@ class QAOA_error(Exception):
 
 class QAOA_circuit(object):
 
-    def __init__(self, clause_list, depth, gate_U, gate_B):
+    def __init__(self, clause_list, depth):
         self.num_qubits = np.abs(clause_list).max()
         self.clause_list = clause_list
         self.depth = depth
-        self.gate_U = gate_U
-        self.gate_B = gate_B
-        self.hamiltonian = hamiltonian(clause_list)
+        self.gate_U = self.c_op()
+        self.gate_B = self.b_op()
+        self.hamiltonian = self.hamiltonian()
 
     def evolve(self, gs, bs):
         dim = 2 ** self.num_qubits
@@ -61,7 +61,7 @@ class QAOA_circuit(object):
         angles = ans.x
 
         qaoa_ans = {'output_qaoa': self.max_bitstr(angles),
-                    'state_energy' : ans.fun,
+                    'state_energy': ans.fun,
                     'exact_xs': exact_xs,
                     'exact_loss': exact_loss,
                     'angles': angles,
@@ -84,33 +84,115 @@ class QAOA_circuit(object):
 
         return exact_xs, exact_loss
 
+    def b_op(self):
+
+        num_qubits = self.num_qubits
+        dim = 2 ** num_qubits
+        gate = np.zeros((dim, dim))
+        for i in range(1, num_qubits+1):
+            gate = gate + get_x_j(i, num_qubits)
+
+        def expm(beta):
+            return Evolution(la.expm(-1j * beta * gate))
+
+        return expm
+
+    def c_op(self):
+
+        ham = self.hamiltonian()
+
+        def expm(gamma):
+            return Evolution(la.expm(-1j * gamma * ham))
+
+        return expm
+
+    def hamiltonian(self):
+        clause_list = self.clause_list
+        num_qubits = np.abs(clause_list).max()
+        dim = 2 ** num_qubits
+        proj = np.zeros((dim, dim))
+
+        for clause in clause_list:
+            proj_j = self.projector(clause)
+            proj = proj + proj_j
+
+        return proj
+
+    def projector(self, idx):
+
+        num_qubits = self.num_qubits
+
+        p_pos = np.matrix([[1,0],[0,0]])
+        p_neg = np.matrix([[0,0],[0,1]])
+
+        Id = np.eye(2)
+        proj = 1
+        for i in range(1, abs(idx[0])):
+            proj = np.kron(proj, Id)
+        if idx[0] > 0:
+            proj = np.kron(proj, p_pos)
+        else:
+            proj = np.kron(proj, p_neg)
+
+        for i in range(abs(idx[0])+1, abs(idx[1])):
+            proj = np.kron(proj, Id)
+        if idx[1] > 0:
+            proj = np.kron(proj, p_pos)
+        else:
+            proj = np.kron(proj, p_neg)
+
+        for i in range(abs(idx[1])+1, abs(idx[2])):
+            proj = np.kron(proj, Id)
+        if idx[2] > 0:
+            proj = np.kron(proj, p_pos)
+        else:
+            proj = np.kron(proj, p_neg)
+
+        for i in range(abs(idx[2]), num_qubits):
+            proj = np.kron(proj, Id)
+
+        return proj
+
 
 def build_qaoa(clause_list, depth):
+    return QAOA_circuit(clause_list, depth)
 
-    num_qubits = np.abs(clause_list).max()
-    bexp = b_op(num_qubits)
-    cexp = c_op(clause_list)
 
-    return QAOA_circuit(clause_list, depth, cexp, bexp)
+class EvolutionError(Exception):
+    pass
 
 
 class Evolution(object):
 
-    def __init__(self, matrix):
-        self.matrix = np.matrix(matrix)
+    def __init__(self, matrix, noise=None):
+        self.mtx = np.matrix(matrix)
+
+        if noise is None:
+            pass
+        elif isinstance(noise, DepolChannel):
+            pass
+        else:
+            raise EvolutionError("Use class of Error to initialize Evolution operator")
+        self.noise = noise
 
     def __or__(self, state):
         """
         acts on state in form of density matrix
         """
-        return self.matrix @ state @ self.matrix.H
+
+        new_state = self.matrix @ state @ self.matrix.H
+
+        if self.noise is None:
+            return new_state
+        else:
+            return self.noise | new_state
 
     def __str__(self):
         return str(self.matrix)
 
     @property
-    def mtx(self):
-        return self.matrix
+    def matrix(self):
+        return self.mtx
 
 
 class DepolChannel(object):
@@ -124,19 +206,6 @@ class DepolChannel(object):
         """
         dim = len(state)
         return np.eye(dim)/dim * self.p + (1 - self.p) * state
-
-
-def b_op(num_qubits):
-
-    dim = 2 ** num_qubits
-    gate = np.zeros((dim, dim))
-    for i in range(1, num_qubits+1):
-        gate = gate + get_x_j(i, num_qubits)
-
-    def expm(beta):
-        return Evolution(la.expm(-1j * beta * gate))
-
-    return expm
 
 
 def get_x_j(j, num_qubits):
@@ -167,58 +236,4 @@ def get_z_j(j, num_qubits):
     return z_j
 
 
-def hamiltonian(clause_list):
 
-    num_qubits = np.abs(clause_list).max()
-    dim = 2 ** num_qubits
-    proj = np.zeros((dim, dim))
-
-    for clause in clause_list:
-        proj_j = projector(clause, num_qubits)
-        proj = proj + proj_j
-
-    return proj
-
-
-def c_op(clause_list):
-
-    ham = hamiltonian(clause_list)
-
-    def expm(gamma):
-        return Evolution(la.expm(-1j * gamma * ham))
-
-    return expm
-
-
-def projector(idx, num_qubits):
-
-    p_pos = np.matrix([[1,0],[0,0]])
-    p_neg = np.matrix([[0,0],[0,1]])
-
-    Id = np.eye(2)
-    proj = 1
-    for i in range(1, abs(idx[0])):
-        proj = np.kron(proj, Id)
-    if idx[0] > 0:
-        proj = np.kron(proj, p_pos)
-    else:
-        proj = np.kron(proj, p_neg)
-
-    for i in range(abs(idx[0])+1, abs(idx[1])):
-        proj = np.kron(proj, Id)
-    if idx[1] > 0:
-        proj = np.kron(proj, p_pos)
-    else:
-        proj = np.kron(proj, p_neg)
-
-    for i in range(abs(idx[1])+1, abs(idx[2])):
-        proj = np.kron(proj, Id)
-    if idx[2] > 0:
-        proj = np.kron(proj, p_pos)
-    else:
-        proj = np.kron(proj, p_neg)
-
-    for i in range(abs(idx[2]), num_qubits):
-        proj = np.kron(proj, Id)
-
-    return proj
