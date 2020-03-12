@@ -52,7 +52,7 @@ class QAOA_circuit(object):
     def optimize(self, params_0=None, optimizer='COBYLA', maxiter=10_000):
 
         if params_0 is None:
-            params = np.zeros(2 * depth)
+            params = np.zeros(2 * self.depth)
         else:
             params = params_0
 
