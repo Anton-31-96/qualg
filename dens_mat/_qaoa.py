@@ -2,7 +2,7 @@
 
 import numpy as np
 import scipy.linalg as la
-from scipy.optimize import minimize
+from scipy.optimize import minimize, brute
 
 from qualg.qaoa import max_sat_obj
 
@@ -13,17 +13,18 @@ class QAOA_error(Exception):
 
 class QAOA_circuit(object):
 
-    def __init__(self, clause_list, depth):
+    def __init__(self, clause_list, depth, noise=None):
         self.num_qubits = np.abs(clause_list).max()
         self.clause_list = clause_list
         self.depth = depth
-        self.gate_U = self.c_op()
-        self.gate_B = self.b_op()
+        self.noise = noise
+        self.gate_U = self._create_c_op()
+        self.gate_B = self._create_b_op()
         self.hamiltonian = self.hamiltonian()
 
     def evolve(self, gs, bs):
         dim = 2 ** self.num_qubits
-        state = np.eye(dim) / dim # prepare qubits in state plus (use density matrix)
+        state = np.ones((dim, dim)) / dim # prepare qubits in state plus (use density matrix)
         for i in range(self.depth):
             state = self.gate_U(gs[i]) | state
             state = self.gate_B(bs[i]) | state
@@ -49,14 +50,28 @@ class QAOA_circuit(object):
 
         return decimal
 
-    def optimize(self, params_0=None, optimizer='COBYLA', maxiter=10_000):
+    def optimize(self, angles_0=None, optimizer='COBYLA', maxiter=10_000):
+        """
+        Arguments:
+            angles_0 (list | None): initial guess of gammas and betas values
+            optimizer (str): method for parameters optimization ('COBYLAS' | 'GridSearch')
+            maxiter (int): maximum number of iteration in optimization procedure
 
-        if params_0 is None:
-            params = np.zeros(2 * self.depth)
+        Returns:
+            qaoa_ans (dict): contains digest of QAOA optimization
+        """
+
+        if angles_0 is None:
+            angles = np.zeros(2 * self.depth)
         else:
-            params = params_0
+            angles = angles_0
 
-        ans = minimize(self.expv, params, method=optimizer, options={'maxiter': maxiter})
+        bnds_g = [(0, 2 * np.pi)] * self.depth
+        bnds_b = [(0, np.pi)] * self.depth
+        bnds = bnds_g + bnds_b
+
+        ans = minimize(self.expv, angles, method=optimizer, bounds=bnds, options={'maxiter': maxiter})
+
         exact_xs, exact_loss = self.exact_solution()
         angles = ans.x
 
@@ -84,7 +99,7 @@ class QAOA_circuit(object):
 
         return exact_xs, exact_loss
 
-    def b_op(self):
+    def _create_b_op(self):
 
         num_qubits = self.num_qubits
         dim = 2 ** num_qubits
@@ -92,17 +107,20 @@ class QAOA_circuit(object):
         for i in range(1, num_qubits+1):
             gate = gate + get_x_j(i, num_qubits)
 
-        def expm(beta):
-            return Evolution(la.expm(-1j * beta * gate))
+        circuit_noise = self.noise
+
+        def expm(beta, noise=circuit_noise):
+            return Evolution(la.expm(-1j * beta * gate), noise=noise)
 
         return expm
 
-    def c_op(self):
+    def _create_c_op(self):
 
         ham = self.hamiltonian()
+        circuit_noise = self.noise
 
-        def expm(gamma):
-            return Evolution(la.expm(-1j * gamma * ham))
+        def expm(gamma, noise=circuit_noise):
+            return Evolution(la.expm(-1j * gamma * ham), noise=noise)
 
         return expm
 
@@ -154,8 +172,8 @@ class QAOA_circuit(object):
         return proj
 
 
-def build_qaoa(clause_list, depth):
-    return QAOA_circuit(clause_list, depth)
+def build_qaoa(clause_list, depth, noise=None):
+    return QAOA_circuit(clause_list, depth, noise)
 
 
 class EvolutionError(Exception):
@@ -234,6 +252,4 @@ def get_z_j(j, num_qubits):
         z_j = np.kron(z_j, Id)
 
     return z_j
-
-
 
