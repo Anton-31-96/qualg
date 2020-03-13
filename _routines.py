@@ -49,3 +49,36 @@ def generate_sat_list(literals_number, max_density, number_of_samples=10, seed=5
         sat_list.append(sat_density)
 
     return sat_list
+
+
+def get_bit(z, i):
+    """
+    gets the i'th bit of the integer z (0 labels least significant bit)
+    """
+    return (z >> i) & 0x1
+
+
+def negation(z, var_sign):
+    """
+    Returns negation of the bit z if var_sign == -1
+    """
+
+    if var_sign == 1:
+        return z
+    else:
+        return not z
+
+
+def max_sat_obj(z, clause_list):
+    """
+    Returns loss for a max SAT problem. Here we count the number of violated clauses
+    """
+    loss = 0
+    for inst in clause_list:
+        sign_i, sign_j, sign_k = np.sign(inst)
+        var_i, var_j, var_k = np.abs(inst) - 1
+        loss += negation(get_bit(z, var_i), sign_i) \
+                & negation(get_bit(z, var_j), sign_j) \
+                & negation(get_bit(z, var_k), sign_k)
+
+    return loss

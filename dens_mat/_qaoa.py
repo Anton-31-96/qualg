@@ -5,7 +5,7 @@ import numpy as np
 import scipy.linalg as la
 from scipy.optimize import minimize, brute
 
-from qualg.qaoa import max_sat_obj
+from qualg import max_sat_obj
 
 
 class QAOA_error(Exception):
