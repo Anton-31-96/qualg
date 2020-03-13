@@ -1,3 +1,3 @@
 # created by Anton Bozhedarov
 
-from ._qaoa import QAOA_circuit, build_qaoa, DepolChannel
+from ._qaoa import QAOA_circuit, build_qaoa, DepolChannel, generate_data
