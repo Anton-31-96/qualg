@@ -263,7 +263,7 @@ def generate_data(num_variables, sat_list, depth, noise=None):
     for fixed_d_clause in tqdm(sat_list):
         for clause_list in fixed_d_clause:
 
-            cc = dm.build_qaoa(clause_list, depth, noise=noise)
+            cc = build_qaoa(clause_list, depth, noise=noise)
             ans = cc.optimize()
 
             clause_density = len(clause_list) / num_variables

@@ -11,37 +11,37 @@ from ._qaoa_circuit import QAOACircuit, b_op, _initialize_register
 from ._max_cut_problem import qaoa_result_digest, get_qaoa_loss
 
 
-def get_bit(z, i):
-    """
-    gets the i'th bit of the integer z (0 labels least significant bit)
-    """
-    return (z >> i) & 0x1
-
-
-def negation(z, var_sign):
-    """
-    Returns negation of the bit z if var_sign == -1
-    """
-
-    if var_sign == 1:
-        return z
-    else:
-        return not z
-
-
-def max_sat_obj(z, clause_list):
-    """
-    Returns loss for a max SAT problem. Here we count the number of violated clauses
-    """
-    loss = 0
-    for inst in clause_list:
-        sign_i, sign_j, sign_k = np.sign(inst)
-        var_i, var_j, var_k = np.abs(inst) - 1
-        loss += negation(get_bit(z, var_i), sign_i) \
-                & negation(get_bit(z, var_j), sign_j) \
-                & negation(get_bit(z, var_k), sign_k)
-
-    return loss
+# def get_bit(z, i):
+#     """
+#     gets the i'th bit of the integer z (0 labels least significant bit)
+#     """
+#     return (z >> i) & 0x1
+#
+#
+# def negation(z, var_sign):
+#     """
+#     Returns negation of the bit z if var_sign == -1
+#     """
+#
+#     if var_sign == 1:
+#         return z
+#     else:
+#         return not z
+#
+#
+# def max_sat_obj(z, clause_list):
+#     """
+#     Returns loss for a max SAT problem. Here we count the number of violated clauses
+#     """
+#     loss = 0
+#     for inst in clause_list:
+#         sign_i, sign_j, sign_k = np.sign(inst)
+#         var_i, var_j, var_k = np.abs(inst) - 1
+#         loss += negation(get_bit(z, var_i), sign_i) \
+#                 & negation(get_bit(z, var_j), sign_j) \
+#                 & negation(get_bit(z, var_k), sign_k)
+#
+#     return loss
 
 
 def build_qaoa_circuit_sat(clause_list, num_bit, depth, z0=None, mode='simulator', noise_model=None):
