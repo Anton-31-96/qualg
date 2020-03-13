@@ -83,7 +83,8 @@ class QAOA_circuit(object):
                     'exact_loss': exact_loss,
                     'angles': angles,
                     'quant_it': ans.nfev,
-                    'success': ans.success
+                    'success': ans.success,
+                    'gap': ans.fun - exact_loss
                     }
         return qaoa_ans
 
