@@ -1,5 +1,6 @@
 # created by Anton Bozhedarov
 
+import pandas as pd
 import numpy as np
 import scipy.linalg as la
 from scipy.optimize import minimize, brute
@@ -253,3 +254,19 @@ def get_z_j(j, num_qubits):
 
     return z_j
 
+
+def generate_data(num_variables, sat_list, depth, noise=None):
+
+    data = pd.DataFrame()
+
+    for fixed_d_clause in tqdm(sat_list):
+        for clause_list in fixed_d_clause:
+
+            cc = dm.build_qaoa(clause_list, depth, noise=noise)
+            ans = cc.optimize()
+
+            clause_density = len(clause_list) / num_variables
+            ans.update({'clause_density': clause_density})
+            data = data.append(ans, ignore_index=True)
+
+    return data
