@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import scipy.linalg as la
 from scipy.optimize import minimize, brute
+from tqdm import tqdm
 
 from qualg import max_sat_obj
 
