@@ -68,24 +68,43 @@ class QAOA_circuit(object):
         else:
             angles = angles_0
 
+        exact_xs, exact_loss = self.exact_solution()
+
         bnds_g = [(0, 2 * np.pi)] * self.depth
         bnds_b = [(0, np.pi)] * self.depth
         bnds = bnds_g + bnds_b
 
-        ans = minimize(self.expv, angles, method=optimizer, bounds=bnds, options={'maxiter': maxiter})
+        if optimizer == 'COBYLA':
+            ans = minimize(self.expv, angles, method=optimizer, bounds=bnds, options={'maxiter': maxiter})
+            angles = ans.x
 
-        exact_xs, exact_loss = self.exact_solution()
-        angles = ans.x
+            qaoa_ans = {'output_qaoa': self.max_bitstr(angles),
+                        'state_energy': ans.fun,
+                        'exact_xs': exact_xs,
+                        'exact_loss': exact_loss,
+                        'angles': angles,
+                        'quant_it': ans.nfev,
+                        'success': ans.success,
+                        'gap': ans.fun - exact_loss
+                        }
 
-        qaoa_ans = {'output_qaoa': self.max_bitstr(angles),
-                    'state_energy': ans.fun,
-                    'exact_xs': exact_xs,
-                    'exact_loss': exact_loss,
-                    'angles': angles,
-                    'quant_it': ans.nfev,
-                    'success': ans.success,
-                    'gap': ans.fun - exact_loss
-                    }
+        if optimizer == 'GridSearch':
+            grid_step = int(np.power(maxiter/2, 1/(2*self.depth)))
+            bnds_g = [(0, 2 * np.pi)] * self.depth
+            bnds_b = [(0, np.pi)] * self.depth
+            bnds = bnds_g + bnds_b
+            angles = brute(self.expv, ranges=bnds, Ns=grid_step)
+
+            qaoa_ans = {'output_qaoa': self.max_bitstr(angles),
+                        'state_energy': self.expv(angles),
+                        'exact_xs': exact_xs,
+                        'exact_loss': exact_loss,
+                        'angles': angles,
+                        'quant_it': grid_step ** (2*self.depth),
+                        'success': np.NaN,
+                        'gap': self.expv(angles) - exact_loss
+                        }
+
         return qaoa_ans
 
     def exact_solution(self):
