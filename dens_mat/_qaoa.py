@@ -235,19 +235,6 @@ class Evolution(object):
         return self.mtx
 
 
-class DepolChannel(object):
-
-    def __init__(self, p):
-        self.p = p
-
-    def __or__(self, state):
-        """
-        acts on state in form of density matrix
-        """
-        dim = len(state)
-        return np.eye(dim)/dim * self.p + (1 - self.p) * state
-
-
 def get_x_j(j, num_qubits):
     Id = np.eye(2)
     X = np.array([[0, 1], [1, 0]])
