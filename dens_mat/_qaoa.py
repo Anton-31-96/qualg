@@ -7,6 +7,7 @@ from scipy.optimize import minimize, brute
 from tqdm import tqdm
 
 from qualg import max_sat_obj
+from . import NoiseChannel
 
 
 class QAOA_error(Exception):
@@ -209,7 +210,7 @@ class Evolution(object):
 
         if noise is None:
             pass
-        elif isinstance(noise, DepolChannel):
+        elif isinstance(noise, NoiseChannel):
             pass
         else:
             raise EvolutionError("Use class of Error to initialize Evolution operator")
