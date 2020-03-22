@@ -255,7 +255,7 @@ def get_z_j(j, num_qubits):
     return z_j
 
 
-def generate_data(num_variables, sat_list, depth, noise=None):
+def generate_data(num_variables, sat_list, depth, noise=None, angles_0=None, optimizer='COBYLA', maxiter=10_000):
 
     data = pd.DataFrame()
 
@@ -263,7 +263,7 @@ def generate_data(num_variables, sat_list, depth, noise=None):
         for clause_list in fixed_d_clause:
 
             cc = build_qaoa(clause_list, depth, noise=noise)
-            ans = cc.optimize()
+            ans = cc.optimize(angles_0=angles_0, optimizer=optimizer, maxiter=maxiter)
 
             clause_density = len(clause_list) / num_variables
             ans.update({'clause_density': clause_density})
