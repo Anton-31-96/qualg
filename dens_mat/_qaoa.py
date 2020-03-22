@@ -21,9 +21,10 @@ class QAOA_circuit(object):
         self.clause_list = clause_list
         self.depth = depth
         self.noise = noise
-        self.gate_U = self._create_c_op()
-        self.gate_B = self._create_b_op()
         self.hamiltonian = self.hamiltonian()
+        self.mixer_hamiltonian = self._mixer_hamiltonian()
+        self.gate_U = self._c_op_expm
+        self.gate_B = self._b_op_expm
 
     def evolve(self, gs, bs):
         dim = 2 ** self.num_qubits
@@ -94,7 +95,7 @@ class QAOA_circuit(object):
             bnds_g = [(0, 2 * np.pi)] * self.depth
             bnds_b = [(0, np.pi)] * self.depth
             bnds = bnds_g + bnds_b
-            angles = brute(self.expv, ranges=bnds, Ns=grid_step)
+            angles = brute(self.expv, ranges=bnds, Ns=grid_step, workers=-1)
 
             qaoa_ans = {'output_qaoa': self.max_bitstr(angles),
                         'state_energy': self.expv(angles),
@@ -122,30 +123,20 @@ class QAOA_circuit(object):
 
         return exact_xs, exact_loss
 
-    def _create_b_op(self):
-
+    def _mixer_hamiltonian(self):
         num_qubits = self.num_qubits
         dim = 2 ** num_qubits
         gate = np.zeros((dim, dim))
         for i in range(1, num_qubits+1):
             gate = gate + get_x_j(i, num_qubits)
 
-        circuit_noise = self.noise
+        return gate
 
-        def expm(beta, noise=circuit_noise):
-            return Evolution(la.expm(-1j * beta * gate), noise=noise)
+    def _b_op_expm(self, beta):
+        return Evolution(la.expm(-1j * beta * self.mixer_hamiltonian), noise=self.noise)
 
-        return expm
-
-    def _create_c_op(self):
-
-        ham = self.hamiltonian()
-        circuit_noise = self.noise
-
-        def expm(gamma, noise=circuit_noise):
-            return Evolution(la.expm(-1j * gamma * ham), noise=noise)
-
-        return expm
+    def _c_op_expm(self, gamma):
+        return Evolution(la.expm(-1j * gamma * self.hamiltonian), noise=self.noise)
 
     def hamiltonian(self):
         clause_list = self.clause_list
