@@ -140,6 +140,9 @@ class ThermalRelaxation(AmplitudePhaseDamping):
         if t2 - 2 * t1 >= 0: # sign "=" to avoid division by zero
             raise NoiseError(
                 "Invalid T_2 relaxation time parameter: T_2 greater than 2 * T_1.")
+        if t2 - t1 < 0:
+            raise NoiseError(
+                "Invalid T_2 relaxation time parameter: T_2 less than T_1.")
 
         t2_pure = (2 * t1 * t2) / (2 * t1 - t2)
         param_amp = 1 - np.exp(- gate_time / t1)
