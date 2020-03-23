@@ -1,5 +1,6 @@
 # created by Anton Bozhedarov
 
+from copy import copy
 import pandas as pd
 import numpy as np
 import scipy.linalg as la
@@ -20,7 +21,7 @@ class QAOA_circuit(object):
         self.num_qubits = np.abs(clause_list).max()
         self.clause_list = clause_list
         self.depth = depth
-        self.noise = noise
+        self.noise = copy(noise)
         self.hamiltonian = self.hamiltonian()
         self.mixer_hamiltonian = self._mixer_hamiltonian()
         self.gate_U = self._c_op_expm
