@@ -46,7 +46,7 @@ class DepolChannel(NoiseChannel):
 
 class AmplitudePhaseDamping(NoiseChannel):
 
-    def __init__(self, param_amp, param_phase, excited_state_population=0):
+    def __init__(self, param_amp, param_phase, excited_state_population=0, num_qubits=None):
 
         if param_amp < 0:
             raise NoiseError(f"Invalid amplitude damping parameter, {param_amp} < 0")
@@ -76,19 +76,28 @@ class AmplitudePhaseDamping(NoiseChannel):
 
         # chose non-zero operators:
         kraus_ops = [op for op in [A0, A1, A2, B0, B1, B2] if np.linalg.norm(op) > 1e-10]
-        self.kraus_ops = kraus_ops
+
+        self.kraus_ops = sum(kraus_ops)
+        if num_qubits is None:
+            self.kraus_ops_ext = None
+        else:
+            self._create_extended_kraus_ops(num_qubits)
+
+    def _create_extended_kraus_ops(self, num_qubits):
+        kraus_ops_ext = self.kraus_ops
+        for _ in range(num_qubits - 1):
+            kraus_ops_ext = np.kron(kraus_ops_ext, self.kraus_ops)
+        self.kraus_ops_ext = np.kron(kraus_ops_ext, np.conj(kraus_ops_ext))
 
     def __or__(self, state):
-        dim = int(np.log2(len(state)))
-        for kraus_op in self.kraus_ops:
+        dim = len(state)
+        if self.kraus_ops_ext is None:
+            num_qubits = int(np.log2(dim))
+            self._create_extended_kraus_ops(num_qubits)
 
-            # create noise operator that acts on the whole system.
-            # Here we assume that error acts locally on each qubit
-            kraus_op_ext = kraus_op
-            for i in range(dim - 1):
-                kraus_op_ext = np.kron(kraus_op_ext, kraus_op)
+        state = self.kraus_ops_ext @ state.reshape(-1,1)
+        state = state.reshape(dim, dim)
 
-            state += kraus_op_ext @ state @ kraus_op_ext.H
         return state
 
 
@@ -101,4 +110,39 @@ class AmplitudeDamping(AmplitudePhaseDamping):
 class PhaseDamping(AmplitudePhaseDamping):
 
     def __init__(self, param_phase, excited_state_population=0):
-        AmplitudePhaseDamping.__init__(self, param_phase, excited_state_population)
+        AmplitudePhaseDamping.__init__(param_phase, excited_state_population)
+
+
+class ThermalRelaxation(AmplitudePhaseDamping):
+
+    def __init__(self, t1, t2, gate_time=1, excited_state_population=0):
+        """
+        t1 (double): T1 relaxation time constant (energy relaxation)
+        t2 (double): T2 relaxation time constant (phase time relaxation)
+        gate_time (double): the gate time for relaxation error.
+        excited_state_population (double): the population of |1>
+                                           state at equilibrium (default: 0).
+        """
+
+        # check the value of parameters t1, t2 to be physical
+        if excited_state_population < 0:
+            raise NoiseError("Invalid excited state population "
+                             f"({excited_state_population} < 0).")
+        if excited_state_population > 1:
+            raise NoiseError("Invalid excited state population "
+                             f"({excited_state_population} > 1).")
+        if gate_time < 0:
+            raise NoiseError(f"Invalid gate_time ({gate_time} < 0)")
+        if t1 <= 0:
+            raise NoiseError("Invalid T_1 relaxation time parameter: T_1 <= 0.")
+        if t2 <= 0:
+            raise NoiseError("Invalid T_2 relaxation time parameter: T_2 <= 0.")
+        if t2 - 2 * t1 >= 0: # sign "=" to avoid division by zero
+            raise NoiseError(
+                "Invalid T_2 relaxation time parameter: T_2 greater than 2 * T_1.")
+
+        t2_pure = (2 * t1 * t2) / (2 * t1 - t2)
+        param_amp = 1 - np.exp(- gate_time / t1)
+        param_phase = 1 - np.exp(- 2 * gate_time / t2_pure)
+
+        AmplitudePhaseDamping.__init__(self, param_amp, param_phase, excited_state_population)
